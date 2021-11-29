@@ -1,20 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
 {
-    private QRManager qrManager;
-    private NFCManager nfcManager;
-    private BTManager btManager;
-    private GPSManager gpsManager;
+    [SerializeField] private QRManager qrManager;
+    [SerializeField] private NFCManager nfcManager;
+    [SerializeField] private BTManager btManager;
+    [SerializeField] private GPSManager gpsManager;
+
+    [SerializeField] Button[] mainMenuButtons;
+    [SerializeField] Button backButton;
 
     private void Start()
     {
         qrManager = new QRManager();
         nfcManager = new NFCManager();
         btManager = new BTManager();
-        gpsManager = new GPSManager(); 
     }
 
     public void ScanQR()
@@ -34,7 +37,27 @@ public class MainMenu : MonoBehaviour
 
     public void GPS()
     {
+        foreach (Button btn in mainMenuButtons)
+        {
+            btn.gameObject.SetActive(false);
+        }
+
+        backButton.gameObject.SetActive(true);
+
         Debug.Log("Comparing gps locations");
         StartCoroutine(gpsManager.StartGpsMonitoring());
+    }
+
+    public void Back()
+    {
+        foreach (Button btn in mainMenuButtons)
+        {
+            btn.gameObject.SetActive(true);
+        }
+
+        backButton.gameObject.SetActive(false);
+
+        StopAllCoroutines();
+        gpsManager.Stop();
     }
 }

@@ -7,13 +7,14 @@ public class MainMenu : MonoBehaviour
     private QRManager qrManager;
     private NFCManager nfcManager;
     private BTManager btManager;
-
+    private GPSManager gpsManager;
 
     private void Start()
     {
         qrManager = new QRManager();
         nfcManager = new NFCManager();
         btManager = new BTManager();
+        gpsManager = new GPSManager(); 
     }
 
     public void ScanQR()
@@ -29,5 +30,11 @@ public class MainMenu : MonoBehaviour
     public void Bluetooth()
     {
         Debug.Log("Scanning for bluetooth device");
+    }
+
+    public void GPS()
+    {
+        Debug.Log("Comparing gps locations");
+        StartCoroutine(gpsManager.StartGpsMonitoring());
     }
 }

@@ -211,9 +211,9 @@ MonoBehaviour:
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontSizeMin: 32
+  m_fontSizeMax: 84
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -620,7 +620,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   background: {fileID: 1301345944}
   popupDialog: {fileID: 509022546}
-  distanceFromTargetText: {fileID: 0}
+  distanceFromTargetText: {fileID: 173835700}
 --- !u!4 &449054342
 Transform:
   m_ObjectHideFlags: 0

@@ -7,11 +7,12 @@ using UnityEngine.UI;
 
 public class GPSManager : MonoBehaviour
 {
-    private float gpsPingTimeout = 2f;
+    private float gpsPingTimeout = 1f;
     private bool monitoring;
 
     private LocationInfo testTargetLocation;
     private LocationInfo currentDeviceLocation;
+    private Color originalBackgroundColor;
 
     [SerializeField] Image background;
     [SerializeField] GameObject popupDialog;
@@ -40,7 +41,7 @@ public class GPSManager : MonoBehaviour
 
         }
 
-        Input.location.Start();
+        Input.location.Start(1f, 1f);
 
         int maxWait = 20;
         while(Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
@@ -66,10 +67,11 @@ public class GPSManager : MonoBehaviour
         }
 
         testTargetLocation.latitude = Input.location.lastData.latitude;
-        testTargetLocation.longitude = Input.location.lastData.altitude;
+        testTargetLocation.longitude = Input.location.lastData.longitude;
         testTargetLocation.altitude = Input.location.lastData.altitude;
         testTargetLocation.horizontalAccuracy = Input.location.lastData.horizontalAccuracy;
 
+        originalBackgroundColor = Color.white;
         background.color = Color.red;
         distanceFromTargetText.gameObject.SetActive(true);
 
@@ -85,6 +87,8 @@ public class GPSManager : MonoBehaviour
     internal void Stop()
     {
         monitoring = false;
+        background.color = originalBackgroundColor;
+        distanceFromTargetText.gameObject.SetActive(false);
     }
 
     public void StartTestDrive()
@@ -105,22 +109,33 @@ public class GPSManager : MonoBehaviour
 
     void Update()
     {
-        if (monitoring)
+        try
         {
-            if (gpsPingTimeout < 0)
+            if (gpsPingTimeout < 0 && monitoring)
             {
-                SendCurrentLocation();
-                gpsPingTimeout = 2f;
-            }
 
-            if (CheckIfCloseToTarget())
-            {
-                // endgame
-                background.color = Color.green;
-                Debug.Log("Target reached");
-            }
 
+                //SendCurrentLocation();
+
+
+                if (CheckIfCloseToTarget())
+                {
+                    // endgame
+                    background.color = Color.green;
+                    Debug.Log("Target reached");
+                }
+                else
+                {
+                    background.color = Color.red;
+                }
+
+                
+                gpsPingTimeout = 1f;
+            }
             gpsPingTimeout -= Time.deltaTime;
+        } catch(Exception e)
+        {
+            distanceFromTargetText.text = e.Message;
         }
     }
 
@@ -129,7 +144,7 @@ public class GPSManager : MonoBehaviour
         // Get target location from server;
 
 
-        if (GetDistanceInMeters(currentDeviceLocation.latitude, currentDeviceLocation.longitude, testTargetLocation.latitude, testTargetLocation.longitude) <= 1)
+        if (GetDistanceInMeters(Input.location.lastData.latitude, Input.location.lastData.longitude, testTargetLocation.latitude, testTargetLocation.longitude) <= 5d)
         {
 
             return true;
@@ -143,28 +158,31 @@ public class GPSManager : MonoBehaviour
     private double GetDistanceInMeters(double lat1, double lng1, double lat2, double lng2)
     {
 
-        double earthRadius = 6371000; // in meters
+        double earthRadius = 6371d; // in km
 
         double dLat = ToRadians(lat2 - lat1);
         double dLng = ToRadians(lng2 - lng1);
 
-        double sindLat = Math.Sin(dLat / 2);
-        double sindLng = Math.Sin(dLng / 2);
+        double sindLat = Math.Sin(dLat / 2d);
+        double sindLng = Math.Sin(dLng / 2d);
 
-        double a = Math.Pow(sindLat, 2) + Math.Pow(sindLng, 2)
+        double a = Math.Pow(sindLat, 2d) + Math.Pow(sindLng, 2d)
             * Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2));
 
-        double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        double c = 2d * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1d - a));
 
         double dist = earthRadius * c;
-        distanceFromTargetText.text = dist.ToString();
+        double distMeters = dist * 1000d;
 
-        return dist; // output distance, in meters
+
+        distanceFromTargetText.text = "Distance from target: \n" + distMeters.ToString() + "\nCurrentLocation: \nLatitude: " + Input.location.lastData.latitude + "\nLongitude: " + Input.location.lastData.longitude;
+
+        return distMeters; // output distance, in meters
     }
 
     private double ToRadians(double angle) // Math extension method
     {
-        return (Math.PI / 180) * angle;
+        return (Math.PI / 180d) * angle;
     }
 
     private void SendCurrentLocation()
@@ -172,10 +190,9 @@ public class GPSManager : MonoBehaviour
         Debug.Log("Sending current location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
         
         currentDeviceLocation.latitude = Input.location.lastData.latitude;
-        currentDeviceLocation.longitude = Input.location.lastData.altitude;
+        currentDeviceLocation.longitude = Input.location.lastData.longitude;
         currentDeviceLocation.altitude = Input.location.lastData.altitude;
         currentDeviceLocation.horizontalAccuracy = Input.location.lastData.horizontalAccuracy;
 
-        throw new NotImplementedException();
     }
 }

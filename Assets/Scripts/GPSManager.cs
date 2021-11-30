@@ -5,7 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class GPSManager : MonoBehaviour
+public class GPSManager : MonoBehaviour, IManager
 {
     private float gpsPingTimeout = 1f;
     private bool monitoring;
@@ -16,7 +16,7 @@ public class GPSManager : MonoBehaviour
 
     [SerializeField] Image background;
     [SerializeField] GameObject popupDialog;
-    [SerializeField] TMP_Text distanceFromTargetText;
+    [SerializeField] TMP_Text debugText;
 
 
     struct LocationInfo 
@@ -28,7 +28,7 @@ public class GPSManager : MonoBehaviour
     }
 
 
-    public IEnumerator StartGpsMonitoring()
+    public IEnumerator StartMonitoring()
     { 
 
         if (!Input.location.isEnabledByUser)
@@ -73,7 +73,7 @@ public class GPSManager : MonoBehaviour
 
         originalBackgroundColor = Color.white;
         background.color = Color.red;
-        distanceFromTargetText.gameObject.SetActive(true);
+        debugText.gameObject.SetActive(true);
 
         monitoring = true;
     }
@@ -82,29 +82,6 @@ public class GPSManager : MonoBehaviour
     {
         popupDialog.GetComponent<TextContainer>().textObject.text = "Please enable location on your device.";
         popupDialog.SetActive(true);
-    }
-
-    internal void Stop()
-    {
-        monitoring = false;
-        background.color = originalBackgroundColor;
-        distanceFromTargetText.gameObject.SetActive(false);
-    }
-
-    public void StartTestDrive()
-    { 
-
-        currentDeviceLocation.latitude = 38.8951f;
-        currentDeviceLocation.longitude = -77.0363f;
-
-        testTargetLocation.latitude = 38.8952f;
-        testTargetLocation.longitude = -77.0363f;
-
-        if (CheckIfCloseToTarget())
-        {
-            // endgame
-            Debug.Log("Target reached");
-        }
     }
 
     void Update()
@@ -135,7 +112,7 @@ public class GPSManager : MonoBehaviour
             gpsPingTimeout -= Time.deltaTime;
         } catch(Exception e)
         {
-            distanceFromTargetText.text = e.Message;
+            debugText.text = e.Message;
         }
     }
 
@@ -175,7 +152,7 @@ public class GPSManager : MonoBehaviour
         double distMeters = dist * 1000d;
 
 
-        distanceFromTargetText.text = "Distance from target: \n" + distMeters.ToString() + "\nCurrentLocation: \nLatitude: " + Input.location.lastData.latitude + "\nLongitude: " + Input.location.lastData.longitude;
+        debugText.text = "Distance from target: \n" + distMeters.ToString() + "\nCurrentLocation: \nLatitude: " + Input.location.lastData.latitude + "\nLongitude: " + Input.location.lastData.longitude;
 
         return distMeters; // output distance, in meters
     }
@@ -194,5 +171,12 @@ public class GPSManager : MonoBehaviour
         currentDeviceLocation.altitude = Input.location.lastData.altitude;
         currentDeviceLocation.horizontalAccuracy = Input.location.lastData.horizontalAccuracy;
 
+    }
+
+    public void StopMonitoring()
+    {
+        monitoring = false;
+        background.color = Color.white;
+        debugText.gameObject.SetActive(false);
     }
 }

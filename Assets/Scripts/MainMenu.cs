@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
 {
+    List<IManager> managers = new List<IManager>();
+
     [SerializeField] private QRManager qrManager;
     [SerializeField] private NFCManager nfcManager;
     [SerializeField] private BTManager btManager;
@@ -15,27 +17,39 @@ public class MainMenu : MonoBehaviour
 
     private void Start()
     {
-        qrManager = new QRManager();
-        nfcManager = new NFCManager();
-        btManager = new BTManager();
+        managers.Add(gpsManager);
+        managers.Add(btManager);
     }
 
     public void ScanQR()
     {
+        DisableMenuButtons();
         Debug.Log("Scanning QR code");
     }
 
     public void NFC()
     {
+        DisableMenuButtons();
         Debug.Log("Using NFC");
     }
 
     public void Bluetooth()
     {
-        Debug.Log("Scanning for bluetooth device");
+        DisableMenuButtons();
+
+        Debug.Log("Starting bluetooth");
+        StartCoroutine(btManager.StartMonitoring());
     }
 
     public void GPS()
+    {
+        DisableMenuButtons();
+
+        Debug.Log("Comparing gps locations");
+        StartCoroutine(gpsManager.StartMonitoring());
+    }
+
+    private void DisableMenuButtons()
     {
         foreach (Button btn in mainMenuButtons)
         {
@@ -43,9 +57,6 @@ public class MainMenu : MonoBehaviour
         }
 
         backButton.gameObject.SetActive(true);
-
-        Debug.Log("Comparing gps locations");
-        StartCoroutine(gpsManager.StartGpsMonitoring());
     }
 
     public void Back()
@@ -55,9 +66,14 @@ public class MainMenu : MonoBehaviour
             btn.gameObject.SetActive(true);
         }
 
+        foreach(IManager manager in managers)
+        {
+            manager.StopMonitoring();
+        }
+
         backButton.gameObject.SetActive(false);
 
         StopAllCoroutines();
-        gpsManager.Stop();
+
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -13,7 +14,7 @@ public class BTManager : MonoBehaviour, IManager
     private Color originalBackgroundColor;
     [SerializeField] Image background;
     [SerializeField] GameObject popupDialog;
-    [SerializeField] TMP_Text debugText;
+    [SerializeField] GameObject scrollableContent;
 
     private void Start()
     {
@@ -25,8 +26,7 @@ public class BTManager : MonoBehaviour, IManager
         monitoring = true;
 
         originalBackgroundColor = Color.white;
-        background.color = Color.red;
-        debugText.gameObject.SetActive(true);
+        scrollableContent.gameObject.SetActive(true);
 
         yield return null;
     }
@@ -35,7 +35,7 @@ public class BTManager : MonoBehaviour, IManager
     {
         monitoring = false;
         background.color = Color.white;
-        debugText.gameObject.SetActive(false);
+        scrollableContent.gameObject.SetActive(false);
     }
 
     private void Update()
@@ -46,7 +46,22 @@ public class BTManager : MonoBehaviour, IManager
 
             if (elapsedTime >= 1)
             {
-                debugText.text = "Bluetooth enabled: " + bluetoothHelper.GetBluetoothEnabled() + "\nElapsed Time: " + bluetoothHelper.GetElapsedTime() + "\nDevices: \n" + bluetoothHelper.GetDiscoveredBluetoothDevices();
+                string scrollableText =
+                    "Bluetooth enabled: " + bluetoothHelper.GetBluetoothEnabled()
+                    + "\nElapsed Time: " + bluetoothHelper.GetElapsedTime()
+                    + "\nDevices:" + bluetoothHelper.GetDiscoveredBluetoothDevices();
+
+                BluetoothHelper.BtConnections connectionObject = bluetoothHelper.GetDiscoveredBluetoothDevices();
+
+                foreach (BluetoothHelper.BtConnection conn in connectionObject.connections)
+                {
+                    Debug.Log(conn);
+                    scrollableText += "\n" + conn.ToString();
+                }
+
+                scrollableContent.GetComponentInChildren<TMP_Text>().text = scrollableText;
+
+
                 elapsedTime = 0;
             }
         }

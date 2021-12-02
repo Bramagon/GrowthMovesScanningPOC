@@ -9,6 +9,24 @@ public class BluetoothHelper
     static AndroidJavaClass pluginClass;
     static AndroidJavaObject pluginInstance;
 
+
+    [System.Serializable]
+    public class BtConnection {
+        public string name;
+        public string rssi;
+
+        public override string ToString()
+        {
+            return "Name: " + name + " | RSSI: " + rssi;
+        }
+    }
+
+    [System.Serializable]
+    public class BtConnections
+    {
+        public List<BtConnection> connections;
+    }
+
     public BluetoothHelper()
     {
         pluginClass = new AndroidJavaClass(pluginName);
@@ -30,19 +48,30 @@ public class BluetoothHelper
         if (Application.platform == RuntimePlatform.Android)
         {
             return pluginInstance.Call<bool>("getBluetoothEnabled");
-        }
-        Debug.LogWarning("Wrong platform");
+    }
+    Debug.LogWarning("Wrong platform");
         return false;
     }
 
-    public string GetDiscoveredBluetoothDevices()
+    public BtConnections GetDiscoveredBluetoothDevices()
     {
         if (Application.platform == RuntimePlatform.Android)
         {
-            
-            
-           return pluginInstance.Call<string>("getDiscoveredBluetoothDevices");
-            
+            string result = pluginInstance.Call<string>("getDiscoveredBluetoothDevices");
+            BtConnections connections = JsonUtility.FromJson<BtConnections>(result);
+
+            return connections;
+        }
+        Debug.LogWarning("Wrong platform");
+        return new BtConnections();
+    }
+
+    public string GetDiscoveredBluetoothDevicesString()
+    {
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            return pluginInstance.Call<string>("getDiscoveredBluetoothDevices");
+
         }
         Debug.LogWarning("Wrong platform");
         return "";

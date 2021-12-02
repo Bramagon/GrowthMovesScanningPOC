@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Android;
 using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
@@ -15,10 +16,18 @@ public class MainMenu : MonoBehaviour
     [SerializeField] Button[] mainMenuButtons;
     [SerializeField] Button backButton;
 
+    GameObject dialog = null;
+
     private void Start()
     {
         managers.Add(gpsManager);
         managers.Add(btManager);
+
+        if (!Permission.HasUserAuthorizedPermission(Permission.FineLocation))
+        {
+            Permission.RequestUserPermission(Permission.FineLocation);
+            dialog = new GameObject();
+        }
     }
 
     public void ScanQR()

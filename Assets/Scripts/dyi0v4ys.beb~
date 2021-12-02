@@ -80,7 +80,7 @@ public class GPSManager : MonoBehaviour, IManager
 
     private void ShowDialog()
     {
-        popupDialog.GetComponent<TextContainer>().textObject.text = "Please enable location on your device.";
+        popupDialog.GetComponentInChildren<TextContainer>().textObject.text = "Please enable location on your device.";
         popupDialog.SetActive(true);
     }
 
@@ -152,7 +152,7 @@ public class GPSManager : MonoBehaviour, IManager
         double distMeters = dist * 1000d;
 
 
-        scrollableContent.GetComponentInChildren<TMP_Text>().text = "Distance from target: \n" + distMeters.ToString() + "\nCurrentLocation: \nLatitude: " + Input.location.lastData.latitude + "\nLongitude: " + Input.location.lastData.longitude;
+        scrollableContent.GetComponent<TMP_Text>().text = "Distance from target: \n" + distMeters.ToString() + "\nCurrentLocation: \nLatitude: " + Input.location.lastData.latitude + "\nLongitude: " + Input.location.lastData.longitude;
 
         return distMeters; // output distance, in meters
     }

@@ -13,18 +13,31 @@ public class BluetoothHelper
     [System.Serializable]
     public class BtConnection {
         public string name;
-        public string rssi;
+        public string distance;
+        public string updateRate;
 
         public override string ToString()
         {
-            return "Name: " + name + " | RSSI: " + rssi;
+            return "\n\nName: " + name + " |\n Distance: " + distance + "|\n Rate: " + updateRate;
         }
     }
 
     [System.Serializable]
     public class BtConnections
     {
-        public List<BtConnection> connections;
+        public List<BtConnection> connections = new List<BtConnection>();
+
+        public override string ToString()
+        {
+            string connectionsString = "";
+
+            foreach(BtConnection conn in connections)
+            {
+                connectionsString += conn.ToString();
+            }
+
+            return connectionsString;
+        }
     }
 
     public BluetoothHelper()
@@ -37,7 +50,7 @@ public class BluetoothHelper
     {
         if (Application.platform == RuntimePlatform.Android)
         {
-            return pluginInstance.Call<double>("getElapsedTime");
+            return pluginInstance.Call<int>("getElapsedTime");
         }
         Debug.LogWarning("Wrong platform");
         return 0;

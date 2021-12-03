@@ -12,9 +12,13 @@ public class BTManager : MonoBehaviour, IManager
     private bool monitoring;
 
     private Color originalBackgroundColor;
+    BluetoothHelper.BtConnections connectionObject;
+
     [SerializeField] Image background;
     [SerializeField] GameObject popupDialog;
     [SerializeField] GameObject scrollableContent;
+    [SerializeField] TMP_Text debugText;
+    [SerializeField] Button deviceButtonPrefab;
 
     private void Start()
     {
@@ -26,7 +30,7 @@ public class BTManager : MonoBehaviour, IManager
         monitoring = true;
 
         originalBackgroundColor = Color.white;
-        scrollableContent.gameObject.SetActive(true);
+        scrollableContent.transform.parent.parent.gameObject.SetActive(true);
 
         yield return null;
     }
@@ -35,7 +39,7 @@ public class BTManager : MonoBehaviour, IManager
     {
         monitoring = false;
         background.color = Color.white;
-        scrollableContent.gameObject.SetActive(false);
+        scrollableContent.transform.parent.parent.gameObject.SetActive(false);
     }
 
     private void Update()
@@ -43,23 +47,24 @@ public class BTManager : MonoBehaviour, IManager
         if (monitoring)
         {
             elapsedTime += Time.deltaTime;
+            connectionObject = bluetoothHelper.GetDiscoveredBluetoothDevices();
 
-            if (elapsedTime >= 1)
+            if (elapsedTime >= 1f)
             {
                 string scrollableText =
                     "Bluetooth enabled: " + bluetoothHelper.GetBluetoothEnabled()
                     + "\nElapsed Time: " + bluetoothHelper.GetElapsedTime()
-                    + "\nDevices:" + bluetoothHelper.GetDiscoveredBluetoothDevices();
+                    + "\nDevices:" + connectionObject.ToString();
 
-                BluetoothHelper.BtConnections connectionObject = bluetoothHelper.GetDiscoveredBluetoothDevices();
 
-                foreach (BluetoothHelper.BtConnection conn in connectionObject.connections)
+ /*               foreach (BluetoothHelper.BtConnection conn in connectionObject.connections)
                 {
-                    Debug.Log(conn);
-                    scrollableText += "\n" + conn.ToString();
-                }
+                    Button btn = Instantiate(deviceButtonPrefab);
+                    btn.GetComponentInChildren<TMP_Text>().text = conn.ToString();
+                    btn.transform.SetParent(scrollableContent.transform);
+                }*/
 
-                scrollableContent.GetComponentInChildren<TMP_Text>().text = scrollableText;
+                debugText.text = scrollableText;
 
 
                 elapsedTime = 0;

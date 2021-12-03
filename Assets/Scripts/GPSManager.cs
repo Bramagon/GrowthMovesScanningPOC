@@ -17,6 +17,7 @@ public class GPSManager : MonoBehaviour, IManager
     [SerializeField] Image background;
     [SerializeField] GameObject popupDialog;
     [SerializeField] GameObject scrollableContent;
+    [SerializeField] TMP_Text debugText;
 
 
     struct LocationInfo 
@@ -73,7 +74,7 @@ public class GPSManager : MonoBehaviour, IManager
 
         originalBackgroundColor = Color.white;
         background.color = Color.red;
-        scrollableContent.gameObject.SetActive(true);
+        scrollableContent.transform.parent.parent.gameObject.SetActive(true);
 
         monitoring = true;
     }
@@ -112,7 +113,7 @@ public class GPSManager : MonoBehaviour, IManager
             gpsPingTimeout -= Time.deltaTime;
         } catch(Exception e)
         {
-            scrollableContent.GetComponentInChildren<TMP_Text>().text = e.Message;
+            debugText.text = e.Message;
         }
     }
 
@@ -152,7 +153,7 @@ public class GPSManager : MonoBehaviour, IManager
         double distMeters = dist * 1000d;
 
 
-        scrollableContent.GetComponentInChildren<TMP_Text>().text = "Distance from target: \n" + distMeters.ToString() + "\nCurrentLocation: \nLatitude: " + Input.location.lastData.latitude + "\nLongitude: " + Input.location.lastData.longitude;
+        debugText.text = "Distance from target: \n" + distMeters.ToString() + "\nCurrentLocation: \nLatitude: " + Input.location.lastData.latitude + "\nLongitude: " + Input.location.lastData.longitude;
 
         return distMeters; // output distance, in meters
     }
@@ -177,6 +178,6 @@ public class GPSManager : MonoBehaviour, IManager
     {
         monitoring = false;
         background.color = Color.white;
-        scrollableContent.gameObject.SetActive(false);
+        scrollableContent.transform.parent.parent.gameObject.SetActive(false);
     }
 }

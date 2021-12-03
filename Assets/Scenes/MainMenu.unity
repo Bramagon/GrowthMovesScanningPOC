@@ -282,7 +282,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 42
+  m_fontSize: 84
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -680,8 +680,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 904821627}
   m_HandleRect: {fileID: 904821626}
   m_Direction: 0
-  m_Value: 0
-  m_Size: 1
+  m_Value: 0.5
+  m_Size: 0.99898374
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -821,7 +821,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   background: {fileID: 1301345944}
   popupDialog: {fileID: 509022546}
-  scrollableContent: {fileID: 1807393771}
+  scrollableContent: {fileID: 939763856}
+  debugText: {fileID: 173835700}
 --- !u!4 &449054342
 Transform:
   m_ObjectHideFlags: 0
@@ -1377,9 +1378,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5cea03c34881741489186e5f8b892295, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  background: {fileID: 1301345944}
+  background: {fileID: 2115445727450771555, guid: e15db9667b7964741a343ee99d230dbf, type: 3}
   popupDialog: {fileID: 509022546}
-  scrollableContent: {fileID: 1807393771}
+  scrollableContent: {fileID: 939763856}
+  debugText: {fileID: 173835700}
+  deviceButtonPrefab: {fileID: 2115445727450771556, guid: e15db9667b7964741a343ee99d230dbf, type: 3}
 --- !u!4 &895616078
 Transform:
   m_ObjectHideFlags: 0
@@ -1500,10 +1503,10 @@ RectTransform:
   m_Father: {fileID: 1657499303}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 1}
-  m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: -492, y: 100}
-  m_SizeDelta: {x: 984, y: 300}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -492, y: 600}
+  m_SizeDelta: {x: 984, y: 600}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &1082086750
 GameObject:

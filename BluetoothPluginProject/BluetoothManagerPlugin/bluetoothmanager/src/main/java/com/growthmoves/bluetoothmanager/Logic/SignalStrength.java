@@ -5,7 +5,7 @@ import java.util.List;
 public class SignalStrength {
 
     public double CalcDistance(int rssi, int txPower) {
-        return Math.pow(10d, ((double) txPower - rssi) / (10 * 2));
+        return Math.pow(((double) txPower - rssi) / (10 * 2), 10d);
     }
 
     public double CalculateAverageDistance(BluetoothLogic.DeviceContainer previousMeasurements) {

@@ -15,6 +15,8 @@ public class BluetoothPlugin extends Application {
     private static Context context;
     private long startTime;
 
+
+
     public static BluetoothManager manager;
     public static BluetoothPlugin getInstance() { return instance; }
 

@@ -18,18 +18,16 @@ public class BluetoothPinging {
     private final Map<String, PingingObject> pings = new ArrayMap<>();
 
     static class PingingObject {
-        public double pingTimeNanos;
+
         public boolean isValid;
-        public PingingObject(double pingTime, boolean validity) {
-            pingTimeNanos = pingTime;
+        public PingingObject(boolean validity) {
+
             isValid = validity;
         }
     }
 
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
-            // fetch current time.
-            double time = System.nanoTime();
 
 
             BluetoothDevice device = (BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
@@ -43,11 +41,14 @@ public class BluetoothPinging {
                 if (pingObject != null && pingObject.isValid) {
 
                     BluetoothLogic.DeviceContainer container = BluetoothLogic.btDevices.get(address);
+                    if (container != null) container.updateRate++;
+                    BluetoothLogic.btDevices.put(address, container);
 
-                    double timeTaken = time - pingObject.pingTimeNanos;
-                    double distance = calcDistance(timeTaken);
+                    System.out.println("PINGING: " + address);
+/*                    double timeTaken = time - pingObject.pingTimeNanos;
+                    double distance = calcDistance(timeTaken);*/
 
-                    System.out.println("TESTING, ADDRESS: " + address + " TIME: " + timeTaken + " DISTANCE: " + distance);
+/*                    System.out.println("TESTING, ADDRESS: " + address + " TIME: " + timeTaken + " DISTANCE: " + distance);*/
 
 
                 }
@@ -63,16 +64,17 @@ public class BluetoothPinging {
     public BluetoothPinging() {
         String action = "android.bluetooth.device.action.UUID";
         IntentFilter filter = new IntentFilter(action);
+
         BluetoothPlugin.getAppContext().registerReceiver(mReceiver, filter);
     }
 
     public void pingDevice(String address) {
         BluetoothDevice bd = BluetoothPlugin.manager.getAdapter().getRemoteDevice(address);
 
-        double pingTime = System.nanoTime();
+/*        double pingTime = System.nanoTime();*/
         boolean isValid = bd.fetchUuidsWithSdp();
 
-        pings.put(address, new PingingObject(pingTime, isValid));
+        pings.put(address, new PingingObject(isValid));
 
     }
 

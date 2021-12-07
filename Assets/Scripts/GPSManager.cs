@@ -92,9 +92,7 @@ public class GPSManager : MonoBehaviour, IManager
             if (gpsPingTimeout < 0 && monitoring)
             {
 
-
                 //SendCurrentLocation();
-
 
                 if (CheckIfCloseToTarget())
                 {
@@ -107,7 +105,6 @@ public class GPSManager : MonoBehaviour, IManager
                     background.color = Color.red;
                 }
 
-                
                 gpsPingTimeout = 1f;
             }
             gpsPingTimeout -= Time.deltaTime;
@@ -121,10 +118,8 @@ public class GPSManager : MonoBehaviour, IManager
     {
         // Get target location from server;
 
-
         if (GetDistanceInMeters(Input.location.lastData.latitude, Input.location.lastData.longitude, testTargetLocation.latitude, testTargetLocation.longitude) <= 5d)
         {
-
             return true;
         }
         else
@@ -152,7 +147,6 @@ public class GPSManager : MonoBehaviour, IManager
         double dist = earthRadius * c;
         double distMeters = dist * 1000d;
 
-
         debugText.text = "Distance from target: \n" + distMeters.ToString() + "\nCurrentLocation: \nLatitude: " + Input.location.lastData.latitude + "\nLongitude: " + Input.location.lastData.longitude;
 
         return distMeters; // output distance, in meters
@@ -165,7 +159,12 @@ public class GPSManager : MonoBehaviour, IManager
 
     private void SendCurrentLocation()
     {
-        Debug.Log("Sending current location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
+        Debug.Log("Sending current location: " 
+            + Input.location.lastData.latitude + " " 
+            + Input.location.lastData.longitude + " " 
+            + Input.location.lastData.altitude + " " 
+            + Input.location.lastData.horizontalAccuracy 
+            + " " + Input.location.lastData.timestamp);
         
         currentDeviceLocation.latitude = Input.location.lastData.latitude;
         currentDeviceLocation.longitude = Input.location.lastData.longitude;

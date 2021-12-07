@@ -13,13 +13,15 @@ public class BluetoothHelper
     [System.Serializable]
     public class BtConnection {
         public string name;
+        public string address;
         public string distance;
-        public string updateRate;
         public bool accurate;
+        public string updateRate;
+
 
         public override string ToString()
         {
-            return "\n\nName: " + name + " |\n Distance: " + distance + "M |\n Accurate: " + accurate + " |\n Rate: " + updateRate;
+            return "\n\nName: " + name + " \n Address: " + address + " \n Distance: " + distance + "M \n Accurate: " + accurate + " \n Rate: " + updateRate;
         }
     }
 

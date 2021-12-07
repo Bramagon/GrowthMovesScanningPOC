@@ -16,14 +16,11 @@ public class BluetoothPlugin extends Application {
     private static Context context;
     private long startTime;
 
-
-
     public static BluetoothManager manager;
     public static BluetoothPlugin getInstance() { return instance; }
 
     public BluetoothPlugin() {
         startTime = System.currentTimeMillis();
-
     }
 
     @Override
@@ -34,7 +31,6 @@ public class BluetoothPlugin extends Application {
         BluetoothPlugin.context = getApplicationContext();
         BluetoothPlugin.manager = (BluetoothManager) BluetoothPlugin.getAppContext().getSystemService(Context.BLUETOOTH_SERVICE);
     }
-
 
     public String getDiscoveredBluetoothDevices() {
         if (logic == null) logic = new BluetoothLogic();

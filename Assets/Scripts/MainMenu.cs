@@ -28,6 +28,8 @@ public class MainMenu : MonoBehaviour
             Permission.RequestUserPermission(Permission.FineLocation);
             dialog = new GameObject();
         }
+
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
     }
 
     public void ScanQR()

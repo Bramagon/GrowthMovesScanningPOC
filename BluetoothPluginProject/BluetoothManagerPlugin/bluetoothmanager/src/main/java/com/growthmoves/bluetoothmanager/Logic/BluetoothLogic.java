@@ -16,6 +16,8 @@ import android.util.ArrayMap;
 
 import com.growthmoves.bluetoothmanager.BluetoothPlugin;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,22 +31,33 @@ public class BluetoothLogic {
     private final BluetoothManager manager;
 
     public static final Map<String, DeviceContainer> btDevices = new ArrayMap<>();
+    private static final Map<Integer, Integer> txPowerMap = new ArrayMap<>();
 
     private final SignalStrength signalStrength = new SignalStrength();
-
-    private final int defaultTxPower = -65;
 
     private int pingCounter = 0;
 
     private Runnable updateRateResetter;
 
     static class DeviceContainer {
-        public List<Double> distanceMeasurements = new ArrayList<>();
+        public List<Float> distanceMeasurements = new ArrayList<>();
         public BluetoothDevice device;
-        public String name;
         public int previousUpdates = 0;
         public float updateRate = 0;
+        public boolean accurate = true;
     }
+
+    static class Sendable {
+        public String name;
+        public DeviceContainer container;
+
+        public Sendable(String deviceName, DeviceContainer containerObject) {
+            name = deviceName;
+            container = containerObject;
+        }
+    }
+
+
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -69,33 +82,15 @@ public class BluetoothLogic {
 
     };
 
-    private void StartUpdateTracking() {
-        if (updateRateResetter == null) {
-            int period = 100;
-            BluetoothPinging pinging = new BluetoothPinging();
-            updateRateResetter = new Runnable() {
-            public void run() {
-                pingCounter++;
-                for (Map.Entry<String, DeviceContainer> entry : btDevices.entrySet()) {
-                    pinging.pingDevice(entry.getValue().device.getAddress());
+    private void preInitializeTxPowerMap() {
+        int [][] initializer =
+                {{-30, -115}, {-20, -84}, {-16, -81}, {-12, -77}, {-8, -72}, {-4, -69}, {0, -65}, {4, -59},
+                        {0, -115}, {1, -84}, {2, -81}, {3, -77}, {4, -72}, {5, -69}, {6, -65}, {7, -59}};
 
-                    if (pingCounter > 10) {
-                        entry.getValue().updateRate = (float) entry.getValue().previousUpdates / (float) pingCounter;
-                        if (pingCounter > 100) {
-                            entry.getValue().previousUpdates = 0;
-                            pingCounter = 0;
-                            }
-                        }
-                    }
-
-                }
-
-        };
-
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(updateRateResetter, 0, period, TimeUnit.MILLISECONDS);
-
+        for (int[] ints : initializer) {
+            txPowerMap.put(ints[0], ints[1]);
         }
+
     }
 
     private final ScanCallback leReceiver = new ScanCallback() {
@@ -108,11 +103,25 @@ public class BluetoothLogic {
 
             String deviceName = device.getName();
 
-            long actualTime = System.currentTimeMillis() - TimeUnit.MILLISECONDS.convert(result.getTimestampNanos(), TimeUnit.NANOSECONDS);
             int rssi = result.getRssi();
+            int transmissionPower = result.getScanRecord().getTxPowerLevel();
+            boolean accurate = true;
+
+            Integer defaultTxPower = null;
+
+            if (transmissionPower != Integer.MIN_VALUE) {
+                defaultTxPower = txPowerMap.getOrDefault(transmissionPower, -65);
+            }
+
+            if (defaultTxPower == null) {
+                accurate = false;
+                defaultTxPower = -65;
+            }
+
             int txPower = result.getTxPower() != ScanResult.TX_POWER_NOT_PRESENT ? result.getTxPower() : defaultTxPower;
 
-            double distance = signalStrength.CalcDistance(rssi, txPower);
+
+            float distance = (float)round(signalStrength.CalcDistance(rssi, txPower), 2);
             System.out.println(deviceName + " distance: " + distance + " RSSI: " + rssi + " txPower " + txPower);
 
             DeviceContainer deviceContainer;
@@ -126,6 +135,7 @@ public class BluetoothLogic {
 
             if (deviceContainer != null) {
                 deviceContainer.distanceMeasurements.add(distance);
+                deviceContainer.accurate = accurate;
 
                 if (deviceContainer.distanceMeasurements.size() > 10) {
                     deviceContainer.distanceMeasurements.subList(0, deviceContainer.distanceMeasurements.size() - 10).clear();
@@ -134,12 +144,14 @@ public class BluetoothLogic {
                 btDevices.put(device.getAddress(), deviceContainer);
             }
 
-            System.out.println("Device: " + deviceName + " was found at: " + actualTime + "!");
+            System.out.println("scanRecordTXPOWER: " + result.getScanRecord().getTxPowerLevel());
+            System.out.println("normalTXPOWER:" + result.getTxPower());
         }
     };
 
     public BluetoothLogic() {
         manager = BluetoothPlugin.manager;
+        preInitializeTxPowerMap();
     }
 
     public boolean getBluetoothState() {
@@ -162,8 +174,8 @@ public class BluetoothLogic {
 
         ScanSettings.Builder settingsBuilder = new ScanSettings.Builder();
 
-        settingsBuilder.setScanMode(ScanSettings.SCAN_MODE_OPPORTUNISTIC);
-        settingsBuilder.setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE);
+        settingsBuilder.setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY);
+        settingsBuilder.setMatchMode(ScanSettings.MATCH_MODE_STICKY);
 
         settingsBuilder.setReportDelay(0);
 
@@ -181,25 +193,25 @@ public class BluetoothLogic {
 
         connectionsString.append("{\"").append("connections\": [");
 
-        int count = 0;
+        List<Sendable> toSend = new ArrayList<>();
 
         for (Map.Entry<String, DeviceContainer> entry : btDevices.entrySet()) {
-            count++;
-
-            String deviceName = entry.getValue().name;
-            BluetoothDevice device = entry.getValue().device;
-
+            String deviceName = entry.getValue().device.getName();
             if (deviceName == null) {
-                deviceName = device.getName() == null ? device.getAddress() : device.getName();
-
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    deviceName = device.getAlias() == null ? device.getAddress() : device.getAlias();
+                    deviceName = entry.getValue().device.getAlias();
                 }
+                if (deviceName == null) continue;
             }
-            Double value = signalStrength.CalculateAverageDistance(entry.getValue());
+            toSend.add(new Sendable(deviceName, entry.getValue()));
+        }
 
-            connectionsString.append("{\"name\":\"").append(deviceName).append("\", \"distance\": \"").append(value).append("\", \"updateRate\": \"").append(entry.getValue().updateRate).append("\"}");
-            if (count != btDevices.size()) connectionsString.append(",");
+        int count = 0;
+        for (Sendable sendable : toSend) {
+            count++;
+            Double value = signalStrength.CalculateAverageDistance(sendable.container);
+            connectionsString.append("{\"name\":\"").append(sendable.name).append("\", \"distance\": \"").append(value).append("\", \"updateRate\": \"").append(sendable.container.updateRate).append("\"}");
+            if (count != toSend.size()) connectionsString.append(",");
         }
 
         connectionsString.append("]}");
@@ -211,5 +223,41 @@ public class BluetoothLogic {
         return connectionsString.toString();
     }
 
+    public static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        BigDecimal bd = BigDecimal.valueOf(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
+    }
+
+    private void StartUpdateTracking() {
+        if (updateRateResetter == null) {
+            int period = 1;
+            BluetoothPinging pinging = new BluetoothPinging();
+            updateRateResetter = new Runnable() {
+                public void run() {
+                    pingCounter++;
+                    for (Map.Entry<String, DeviceContainer> entry : btDevices.entrySet()) {
+                        pinging.pingDevice(entry.getValue().device.getAddress());
+
+                        if (pingCounter > 5) {
+                            entry.getValue().updateRate = (float) entry.getValue().previousUpdates / (float) pingCounter;
+                            if (pingCounter > 100) {
+                                entry.getValue().previousUpdates = 0;
+                                pingCounter = 0;
+                            }
+                        }
+                    }
+
+                }
+
+            };
+
+            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+            executor.scheduleAtFixedRate(updateRateResetter, 0, period, TimeUnit.SECONDS);
+
+        }
+    }
 
 }

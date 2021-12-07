@@ -15,10 +15,11 @@ public class BluetoothHelper
         public string name;
         public string distance;
         public string updateRate;
+        public bool accurate;
 
         public override string ToString()
         {
-            return "\n\nName: " + name + " |\n Distance: " + distance + "|\n Rate: " + updateRate;
+            return "\n\nName: " + name + " |\n Distance: " + distance + "M |\n Accurate: " + accurate + " |\n Rate: " + updateRate;
         }
     }
 

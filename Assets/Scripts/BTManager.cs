@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,6 +21,9 @@ public class BTManager : MonoBehaviour, IManager
     [SerializeField] TMP_Text debugText;
     [SerializeField] Button deviceButtonPrefab;
 
+    private Thread getDevicesThread;
+    private bool threadRunning = false;
+
     private void Start()
     {
         bluetoothHelper = new BluetoothHelper();
@@ -31,12 +35,16 @@ public class BTManager : MonoBehaviour, IManager
 
         originalBackgroundColor = Color.white;
         scrollableContent.transform.parent.parent.gameObject.SetActive(true);
+        /*getDevicesThread = new Thread(() => GetDevices());
+        getDevicesThread.IsBackground = true;
+        getDevicesThread.Start();*/
 
         yield return null;
     }
 
     public void StopMonitoring()
     {
+
         monitoring = false;
         background.color = Color.white;
         scrollableContent.transform.parent.parent.gameObject.SetActive(false);
@@ -46,15 +54,20 @@ public class BTManager : MonoBehaviour, IManager
     {
         if (monitoring)
         {
-            elapsedTime += Time.deltaTime;
-            connectionObject = bluetoothHelper.GetDiscoveredBluetoothDevices();
 
-            if (elapsedTime >= 1f)
+            elapsedTime += Time.deltaTime;
+
+
+            if (elapsedTime >= 1f && !threadRunning)
             {
-                string scrollableText =
-                    "Bluetooth enabled: " + bluetoothHelper.GetBluetoothEnabled()
-                    + "\nElapsed Time: " + bluetoothHelper.GetElapsedTime()
-                    + "\nDevices:" + connectionObject.ToString();
+                connectionObject = bluetoothHelper.GetDiscoveredBluetoothDevices();
+                if (connectionObject != null)
+                {
+                    string scrollableText =
+                        "Bluetooth enabled: " + bluetoothHelper.GetBluetoothEnabled()
+                        + "\nElapsed Time: " + bluetoothHelper.GetElapsedTime()
+                        + "\nDevices:" + connectionObject.ToString();
+
 
 
  /*               foreach (BluetoothHelper.BtConnection conn in connectionObject.connections)
@@ -66,9 +79,30 @@ public class BTManager : MonoBehaviour, IManager
 
                 debugText.text = scrollableText;
 
-
+                }
                 elapsedTime = 0;
             }
         }
     }
+
+
+    public void GetDevices()
+    {
+        float interval = 0.5f;
+        while (monitoring)
+        {
+
+            Debug.Log("TEST " + interval);
+            interval -= 0.01f;
+            if (interval <= 0)
+            {
+                threadRunning = true;
+                connectionObject = bluetoothHelper.GetDiscoveredBluetoothDevices();
+                interval = 0.5f;
+            }
+            threadRunning = false;
+        }
+
+    }
+        
 }

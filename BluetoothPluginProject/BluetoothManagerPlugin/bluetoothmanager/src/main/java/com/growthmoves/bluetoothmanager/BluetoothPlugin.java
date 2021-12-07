@@ -3,6 +3,7 @@ package com.growthmoves.bluetoothmanager;
 import android.app.Application;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
+import android.os.StrictMode;
 import android.util.Log;
 import androidx.annotation.Keep;
 import com.growthmoves.bluetoothmanager.Logic.BluetoothLogic;

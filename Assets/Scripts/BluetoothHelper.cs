@@ -92,4 +92,18 @@ public class BluetoothHelper
         Debug.LogWarning("Wrong platform");
         return "";
     }
+
+    public BtConnection GetBluetoothDeviceByAddress(string address)
+    {
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            string result = pluginInstance.Call<string>("getDiscoveredBluetoothDeviceByAddress", address);
+            BtConnection connection = JsonUtility.FromJson<BtConnection>(result);
+
+            return connection;
+
+        }
+        Debug.LogWarning("Wrong platform");
+        return new BtConnection();
+    }
 }

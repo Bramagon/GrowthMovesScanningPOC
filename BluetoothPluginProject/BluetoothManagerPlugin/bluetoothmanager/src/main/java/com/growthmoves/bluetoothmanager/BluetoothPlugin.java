@@ -46,6 +46,11 @@ public class BluetoothPlugin extends Application {
         return logic.getBluetoothState();
     }
 
+    public String getDiscoveredBluetoothDeviceByAddress(String address) {
+        if (logic == null) logic = new BluetoothLogic();
+        return logic.getDeviceByAddress(address);
+    }
+
     public static Context getAppContext() {
         return BluetoothPlugin.context;
     }

@@ -22,6 +22,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -30,13 +31,39 @@ import java.util.concurrent.TimeUnit;
 public class BluetoothLogic {
 
     private final BluetoothManager manager;
-    private Integer defaultTxPowerValue = -65;
+    private final Integer defaultTxPowerValue = -65;
     private int pingCounter = 0;
     private static final Map<Integer, Integer> txPowerMap = new ArrayMap<>();
     public static final Map<String, DeviceContainer> btDevices = new ArrayMap<>();
 
     private Runnable updateRateResetter;
     private final SignalStrength signalStrength = new SignalStrength();
+
+    public String getDeviceByAddress(String address) {
+        if (!manager.getAdapter().isDiscovering()) discoverDevices();
+
+        StringBuilder connectionsString = new StringBuilder();
+
+        DeviceContainer container = btDevices.get(address);
+        String deviceName = null;
+        if (container != null) {
+            deviceName = container.device.getName();
+        } else {
+            return "{}";
+        }
+
+        if (deviceName == null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                deviceName = container.device.getAlias();
+            }
+            if (deviceName == null) return "{}";
+        }
+        Sendable sendable = new Sendable(deviceName, container);
+
+        Double value = round(signalStrength.CalculateAverageDistance(sendable.container), 3);
+        connectionsString.append("{\"name\":\"").append(sendable.name).append("\", \"address\": \"").append(sendable.container.device.getAddress()).append("\", \"distance\": \"").append(value).append("\", \"accurate\": \"").append(sendable.container.accurate).append("\", \"updateRate\": \"").append(1/sendable.container.updateRate).append("\"}");
+        return connectionsString.toString();
+    }
 
     static class DeviceContainer {
         public List<Double> distanceMeasurements = new ArrayList<>();
@@ -92,8 +119,9 @@ public class BluetoothLogic {
         int count = 0;
         for (Sendable sendable : toSend) {
             count++;
-            Double value = round(signalStrength.CalculateAverageDistance(sendable.container), 5);
-            connectionsString.append("{\"name\":\"").append(sendable.name).append("\", \"address\": \"").append(sendable.container.device.getAddress()).append("\", \"distance\": \"").append(value).append("\", \"accurate\": \"").append(sendable.container.accurate).append("\", \"updateRate\": \"").append(sendable.container.updateRate).append("\"}");
+
+            Double value = round(signalStrength.CalculateAverageDistance(sendable.container), 3);
+            connectionsString.append("{\"name\":\"").append(sendable.name).append("\", \"address\": \"").append(sendable.container.device.getAddress()).append("\", \"distance\": \"").append(value).append("\", \"accurate\": \"").append(sendable.container.accurate).append("\", \"updateRate\": \"").append(1/sendable.container.updateRate).append("\"}");
             if (count != toSend.size()) connectionsString.append(",");
 
         }
@@ -119,10 +147,10 @@ public class BluetoothLogic {
 
     private static double round(double value, int places) {
         if (places < 0) throw new IllegalArgumentException();
-
-        BigDecimal bd = BigDecimal.valueOf(value);
-        bd = bd.setScale(places, RoundingMode.HALF_UP);
-        return bd.doubleValue();
+        System.out.println("Rounding value: " + value);
+            BigDecimal bd = BigDecimal.valueOf(value);
+            bd = bd.setScale(places, RoundingMode.HALF_UP);
+            return bd.doubleValue();
     }
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -141,12 +169,12 @@ public class BluetoothLogic {
                 } else {
                     DeviceContainer container = new DeviceContainer();
                     container.device = device;
+
                     btDevices.put(device.getAddress(), container);
                 }
             }
         }
     };
-
 
     private final ScanCallback leReceiver = new ScanCallback() {
         @Override
@@ -177,7 +205,7 @@ public class BluetoothLogic {
             if (deviceContainer != null) {
                 deviceContainer.distanceMeasurements.add(distance);
                 deviceContainer.accurate = accurate;
-                deviceContainer.updateRate = result.getPeriodicAdvertisingInterval();
+                deviceContainer.updateRate++;
 
                 if (deviceContainer.distanceMeasurements.size() > 10) {
                     deviceContainer.distanceMeasurements.subList(0, deviceContainer.distanceMeasurements.size() - 10).clear();
@@ -216,8 +244,8 @@ public class BluetoothLogic {
     }
 
     private void discoverDevices() {
-        manager.getAdapter().startDiscovery();
 
+        manager.getAdapter().startDiscovery();
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
 
@@ -233,6 +261,8 @@ public class BluetoothLogic {
         settingsBuilder.setReportDelay(0);
 
         manager.getAdapter().getBluetoothLeScanner().startScan(filters, settingsBuilder.build(), leReceiver);
+
+
 
         //StartUpdateTracking();
     }

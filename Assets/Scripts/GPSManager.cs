@@ -74,7 +74,7 @@ public class GPSManager : MonoBehaviour, IManager
 
         originalBackgroundColor = Color.white;
         background.color = Color.red;
-        scrollableContent.transform.parent.parent.gameObject.SetActive(true);
+        scrollableContent.SetActive(true);
 
         monitoring = true;
     }
@@ -177,6 +177,6 @@ public class GPSManager : MonoBehaviour, IManager
     {
         monitoring = false;
         background.color = Color.white;
-        scrollableContent.transform.parent.parent.gameObject.SetActive(false);
+        scrollableContent.SetActive(false);
     }
 }

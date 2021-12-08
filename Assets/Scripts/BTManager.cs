@@ -14,12 +14,15 @@ public class BTManager : MonoBehaviour, IManager
 
     private Color originalBackgroundColor;
     BluetoothHelper.BtConnections connectionObject;
+    BluetoothHelper.BtConnection activeConnection;
 
     [SerializeField] Image background;
     [SerializeField] GameObject popupDialog;
     [SerializeField] GameObject scrollableContent;
     [SerializeField] TMP_Text debugText;
-    [SerializeField] Button deviceButtonPrefab;
+    [SerializeField] GameObject deviceButtonPrefab;
+
+    private Dictionary<string, GameObject> connectionButtons = new Dictionary<string, GameObject>();
 
     private Thread getDevicesThread;
     private bool threadRunning = false;
@@ -34,11 +37,8 @@ public class BTManager : MonoBehaviour, IManager
         monitoring = true;
 
         originalBackgroundColor = Color.white;
-        scrollableContent.transform.parent.parent.gameObject.SetActive(true);
-        /*getDevicesThread = new Thread(() => GetDevices());
-        getDevicesThread.IsBackground = true;
-        getDevicesThread.Start();*/
-
+        scrollableContent.SetActive(true);
+        debugText.gameObject.SetActive(true);
         yield return null;
     }
 
@@ -47,7 +47,9 @@ public class BTManager : MonoBehaviour, IManager
 
         monitoring = false;
         background.color = Color.white;
-        scrollableContent.transform.parent.parent.gameObject.SetActive(false);
+        scrollableContent.SetActive(false);
+        activeConnection = null;
+        debugText.gameObject.SetActive(false);
     }
 
     private void Update()
@@ -64,26 +66,46 @@ public class BTManager : MonoBehaviour, IManager
                 if (connectionObject != null)
                 {
                     string scrollableText =
-                        "Bluetooth enabled: " + bluetoothHelper.GetBluetoothEnabled()
-                        + "\nElapsed Time: " + bluetoothHelper.GetElapsedTime()
-                        + "\nDevices:" + connectionObject.ToString();
+                        "Bluetooth enabled: " + bluetoothHelper.GetBluetoothEnabled();
 
+                    foreach (BluetoothHelper.BtConnection conn in connectionObject.connections)
+                    {
+                        if (!connectionButtons.ContainsKey(conn.address))
+                        {
 
+                            GameObject btn = Instantiate(deviceButtonPrefab, scrollableContent.GetComponentInChildren<ContentSizeFitter>().gameObject.transform);
+                            btn.GetComponentInChildren<TMP_Text>().fontWeight = FontWeight.Bold;
+                            btn.GetComponentInChildren<TMP_Text>().text = conn.name.ToString();
+                            btn.GetComponent<Button>().onClick.AddListener(OnBtnClick);
 
- /*               foreach (BluetoothHelper.BtConnection conn in connectionObject.connections)
-                {
-                    Button btn = Instantiate(deviceButtonPrefab);
-                    btn.GetComponentInChildren<TMP_Text>().text = conn.ToString();
-                    btn.transform.SetParent(scrollableContent.transform);
-                }*/
+                            void OnBtnClick()
+                            {
+                                activeConnection = conn;
+                                scrollableContent.SetActive(false);
+                                debugText.text = conn.ToString();
+                                monitoring = false;
 
-                debugText.text = scrollableText;
+                            };
+
+                            connectionButtons.Add(conn.address, btn);
+                        }
+                    }
+
+  
+
+                    debugText.text = scrollableText;
 
                 }
                 elapsedTime = 0;
             }
+        } else if (activeConnection != null)
+        {
+            activeConnection = bluetoothHelper.GetBluetoothDeviceByAddress(activeConnection.address);
+            debugText.text = activeConnection.ToString();
         }
     }
+
+
 
 
     public void GetDevices()

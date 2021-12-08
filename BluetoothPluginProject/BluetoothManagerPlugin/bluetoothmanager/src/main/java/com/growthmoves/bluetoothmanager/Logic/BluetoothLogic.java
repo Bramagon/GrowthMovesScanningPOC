@@ -3,9 +3,13 @@ package com.growthmoves.bluetoothmanager.Logic;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.AdvertiseCallback;
+import android.bluetooth.le.AdvertiseData;
+import android.bluetooth.le.AdvertiseSettings;
+import android.bluetooth.le.AdvertisingSet;
+import android.bluetooth.le.AdvertisingSetCallback;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
-import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
@@ -22,7 +26,6 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -38,9 +41,23 @@ public class BluetoothLogic {
 
     private Runnable updateRateResetter;
     private final SignalStrength signalStrength = new SignalStrength();
+    private final AdvertiseCallback advertiseCallback = new AdvertiseCallback() {
+
+        @Override
+        public void onStartSuccess(AdvertiseSettings settingsInEffect) {
+            super.onStartSuccess(settingsInEffect);
+            System.out.println("Started advertising");
+        }
+
+
+    };
+
 
     public String getDeviceByAddress(String address) {
-        if (!manager.getAdapter().isDiscovering()) discoverDevices();
+        if (!manager.getAdapter().isDiscovering()) {
+            discoverDevices();
+            startAdvertising();
+        }
 
         StringBuilder connectionsString = new StringBuilder();
 
@@ -89,7 +106,9 @@ public class BluetoothLogic {
     }
 
     public String getDiscoveredDevices() {
-        if (!manager.getAdapter().isDiscovering()) discoverDevices();
+        if (!manager.getAdapter().isDiscovering()) {
+            discoverDevices();
+        }
 
         return constructConnectionsJsonString();
     }
@@ -172,6 +191,7 @@ public class BluetoothLogic {
 
                     btDevices.put(device.getAddress(), container);
                 }
+                startAdvertising();
             }
         }
     };
@@ -216,6 +236,14 @@ public class BluetoothLogic {
             System.out.println(deviceName + " " + device.getAddress() + " distance: " + distance + " RSSI: " + rssi + " txPower " + txPower + " Accurate " + accurate);
             System.out.println("scanRecordTXPOWER: " + result.getScanRecord().getTxPowerLevel());
             System.out.println("normalTXPOWER:" + result.getTxPower());
+            startAdvertising();
+        }
+
+        @Override
+        public void onScanFailed(int errorCode) {
+            super.onScanFailed(errorCode);
+
+            System.out.println("BLE Scan failed! " + errorCode);
         }
     };
 
@@ -263,8 +291,23 @@ public class BluetoothLogic {
         manager.getAdapter().getBluetoothLeScanner().startScan(filters, settingsBuilder.build(), leReceiver);
 
 
-
         //StartUpdateTracking();
+    }
+
+    private void startAdvertising() {
+
+        AdvertiseData.Builder advertiseBuilder = new AdvertiseData.Builder();
+        advertiseBuilder.setIncludeTxPowerLevel(true);
+        advertiseBuilder.setIncludeDeviceName(true);
+
+        AdvertiseSettings.Builder advertiseSettingsBuilder = new AdvertiseSettings.Builder();
+        advertiseSettingsBuilder.setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY);
+        advertiseSettingsBuilder.setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH);
+        advertiseSettingsBuilder.setConnectable(false);
+        advertiseSettingsBuilder.setConnectable(false);
+        advertiseSettingsBuilder.setTimeout(0);
+        System.out.println("BluetoothLE advertising support: " +  manager.getAdapter().isMultipleAdvertisementSupported());
+        manager.getAdapter().getBluetoothLeAdvertiser().startAdvertising(advertiseSettingsBuilder.build(), advertiseBuilder.build(), advertiseCallback);
     }
 
     private void StartUpdateTracking() {

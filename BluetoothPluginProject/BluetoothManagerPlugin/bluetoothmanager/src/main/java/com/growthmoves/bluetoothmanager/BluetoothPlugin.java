@@ -1,12 +1,17 @@
 package com.growthmoves.bluetoothmanager;
-
+import android.app.Activity;
 import android.app.Application;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.os.StrictMode;
 import android.util.Log;
+import androidx.fragment.app.FragmentActivity;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Keep;
 import com.growthmoves.bluetoothmanager.Logic.BluetoothLogic;
+import com.growthmoves.bluetoothmanager.Logic.PermissionsActivity;
 
 @Keep
 public class BluetoothPlugin extends Application {
@@ -20,7 +25,11 @@ public class BluetoothPlugin extends Application {
     public static BluetoothPlugin getInstance() { return instance; }
 
     public BluetoothPlugin() {
+
         startTime = System.currentTimeMillis();
+
+
+
     }
 
     @Override
@@ -30,6 +39,11 @@ public class BluetoothPlugin extends Application {
 
         BluetoothPlugin.context = getApplicationContext();
         BluetoothPlugin.manager = (BluetoothManager) BluetoothPlugin.getAppContext().getSystemService(Context.BLUETOOTH_SERVICE);
+
+        Intent intent = new Intent(context, PermissionsActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+
     }
 
     public String getDiscoveredBluetoothDevices() {

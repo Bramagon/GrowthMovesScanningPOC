@@ -6,8 +6,6 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.AdvertiseCallback;
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
-import android.bluetooth.le.AdvertisingSet;
-import android.bluetooth.le.AdvertisingSetCallback;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
@@ -18,9 +16,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.util.ArrayMap;
-
 import com.growthmoves.bluetoothmanager.BluetoothPlugin;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -51,7 +47,6 @@ public class BluetoothLogic {
 
 
     };
-
 
     public String getDeviceByAddress(String address) {
         if (!manager.getAdapter().isDiscovering()) {
@@ -109,7 +104,7 @@ public class BluetoothLogic {
         if (!manager.getAdapter().isDiscovering()) {
             discoverDevices();
         }
-
+        startAdvertising();
         return constructConnectionsJsonString();
     }
 
@@ -166,6 +161,9 @@ public class BluetoothLogic {
 
     private static double round(double value, int places) {
         if (places < 0) throw new IllegalArgumentException();
+        if (value == Double.MIN_VALUE || Double.isNaN(value)) {
+            return Double.NaN;
+        }
         System.out.println("Rounding value: " + value);
             BigDecimal bd = BigDecimal.valueOf(value);
             bd = bd.setScale(places, RoundingMode.HALF_UP);
@@ -191,7 +189,7 @@ public class BluetoothLogic {
 
                     btDevices.put(device.getAddress(), container);
                 }
-                startAdvertising();
+
             }
         }
     };
@@ -245,6 +243,7 @@ public class BluetoothLogic {
 
             System.out.println("BLE Scan failed! " + errorCode);
         }
+
     };
 
     private Integer tryGetTxValue(ScanResult result) {

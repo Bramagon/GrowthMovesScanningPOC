@@ -7,8 +7,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.StrictMode;
 import android.util.Log;
-import androidx.fragment.app.FragmentActivity;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Keep;
 import com.growthmoves.bluetoothmanager.Logic.BluetoothLogic;
 import com.growthmoves.bluetoothmanager.Logic.PermissionsActivity;
@@ -27,8 +25,6 @@ public class BluetoothPlugin extends Application {
     public BluetoothPlugin() {
 
         startTime = System.currentTimeMillis();
-
-
 
     }
 

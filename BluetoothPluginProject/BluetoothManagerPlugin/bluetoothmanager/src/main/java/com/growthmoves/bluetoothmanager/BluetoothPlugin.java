@@ -36,9 +36,9 @@ public class BluetoothPlugin extends Application {
         BluetoothPlugin.context = getApplicationContext();
         BluetoothPlugin.manager = (BluetoothManager) BluetoothPlugin.getAppContext().getSystemService(Context.BLUETOOTH_SERVICE);
 
-        Intent intent = new Intent(context, PermissionsActivity.class);
+/*        Intent intent = new Intent(context, PermissionsActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
+        startActivity(intent);*/
 
     }
 

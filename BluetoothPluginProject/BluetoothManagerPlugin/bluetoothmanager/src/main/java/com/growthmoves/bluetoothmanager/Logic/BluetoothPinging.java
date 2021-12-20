@@ -78,6 +78,9 @@ public class BluetoothPinging {
 
     }
 
+
+
+
     public boolean checkValidity(double nanoseconds) {
         double nanosecondsToTravelCm = 1000d; // if ping took longer than 1000 nanoseconds, distance would be over 30m, these distances are invalid.
         return !(nanoseconds > nanosecondsToTravelCm);

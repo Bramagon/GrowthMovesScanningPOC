@@ -80,6 +80,7 @@ public class BTManager : MonoBehaviour, IManager
 
                             void OnBtnClick()
                             {
+                                Handheld.Vibrate();
                                 activeConnection = conn;
                                 scrollableContent.SetActive(false);
                                 debugText.text = conn.ToString();

@@ -15,6 +15,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.os.Parcel;
+import android.os.ParcelUuid;
 import android.util.ArrayMap;
 import com.growthmoves.bluetoothmanager.BluetoothPlugin;
 import java.math.BigDecimal;
@@ -22,6 +24,7 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +35,7 @@ public class BluetoothLogic {
     private final BluetoothManager manager;
     private final Integer defaultTxPowerValue = -65;
     private int pingCounter = 0;
+    private String uniqueID = null;
     private static final Map<Integer, Integer> txPowerMap = new ArrayMap<>();
     public static final Map<String, DeviceContainer> btDevices = new ArrayMap<>();
 
@@ -48,15 +52,27 @@ public class BluetoothLogic {
 
     };
 
-    public String getDeviceByAddress(String address) {
+
+    public String getDeviceByID(String id) {
         if (!manager.getAdapter().isDiscovering()) {
             discoverDevices();
-            startAdvertising();
         }
 
         StringBuilder connectionsString = new StringBuilder();
 
-        DeviceContainer container = btDevices.get(address);
+        DeviceContainer container = null;
+
+        for (DeviceContainer c : btDevices.values()) {
+            ParcelUuid[] uuids = c.device.getUuids();
+            if (uuids != null) {
+                for (ParcelUuid uuid : uuids) {
+                    if (uuid.getUuid() != null && uuid.getUuid().toString().equals(id)) {
+                        container = c;
+                    }
+                }
+            }
+        }
+
         String deviceName = null;
         if (container != null) {
             deviceName = container.device.getName();
@@ -98,6 +114,10 @@ public class BluetoothLogic {
     public BluetoothLogic() {
         manager = BluetoothPlugin.manager;
         preInitializeTxPowerMap();
+
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        BluetoothPlugin.getAppContext().registerReceiver(receiver, filter);
     }
 
     public String getDiscoveredDevices() {
@@ -273,10 +293,7 @@ public class BluetoothLogic {
     private void discoverDevices() {
 
         manager.getAdapter().startDiscovery();
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
 
-        BluetoothPlugin.getAppContext().registerReceiver(receiver, filter);
 
         List<ScanFilter> filters = new ArrayList<>();
         ScanFilter.Builder scanFilterBuilder = new ScanFilter.Builder();
@@ -293,20 +310,32 @@ public class BluetoothLogic {
         //StartUpdateTracking();
     }
 
-    private void startAdvertising() {
+    public String startAdvertising() {
+
+        if (uniqueID == null) {
+            uniqueID = UUID.randomUUID().toString();
+        }
+
+        System.out.println("Started advertising with UUID: " + uniqueID);
 
         AdvertiseData.Builder advertiseBuilder = new AdvertiseData.Builder();
         advertiseBuilder.setIncludeTxPowerLevel(true);
         advertiseBuilder.setIncludeDeviceName(true);
 
+        advertiseBuilder.addServiceUuid(ParcelUuid.fromString(uniqueID));
+
         AdvertiseSettings.Builder advertiseSettingsBuilder = new AdvertiseSettings.Builder();
         advertiseSettingsBuilder.setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY);
         advertiseSettingsBuilder.setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH);
+
         advertiseSettingsBuilder.setConnectable(false);
         advertiseSettingsBuilder.setConnectable(false);
         advertiseSettingsBuilder.setTimeout(0);
+
         System.out.println("BluetoothLE advertising support: " +  manager.getAdapter().isMultipleAdvertisementSupported());
         manager.getAdapter().getBluetoothLeAdvertiser().startAdvertising(advertiseSettingsBuilder.build(), advertiseBuilder.build(), advertiseCallback);
+
+        return uniqueID;
     }
 
     private void StartUpdateTracking() {

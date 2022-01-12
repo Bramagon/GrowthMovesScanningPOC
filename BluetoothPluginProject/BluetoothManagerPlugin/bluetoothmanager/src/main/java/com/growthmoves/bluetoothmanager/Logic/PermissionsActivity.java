@@ -2,13 +2,19 @@ package com.growthmoves.bluetoothmanager.Logic;
 
 import android.Manifest;
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+
+import com.growthmoves.bluetoothmanager.BluetoothPlugin;
 
 
 public class PermissionsActivity extends Activity {
@@ -47,6 +53,16 @@ public class PermissionsActivity extends Activity {
         System.out.println("Started permissions activity");
 
         requestPermissions(new String[]{"android.permission.BLUETOOTH_ADVERTISE"}, ANDROID_PERMISSION_BLUETOOTH_ADVERTISE);
+
+        if (!BluetoothPlugin.getInstance().getBluetoothEnabled()) {
+            startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), 1);
+            Toast.makeText(BluetoothPlugin.getAppContext(), "Bluetooth Turned ON", Toast.LENGTH_SHORT).show();
+        }
+
+        if (!BluetoothPlugin.manager.getAdapter().isDiscovering()) {
+            startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE), 1);
+            Toast.makeText(BluetoothPlugin.getAppContext(), "Making Device Discoverable", Toast.LENGTH_SHORT).show();
+        }
 
     }
 }

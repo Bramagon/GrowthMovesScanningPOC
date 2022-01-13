@@ -18,9 +18,13 @@ import android.os.Build;
 import android.os.Parcel;
 import android.os.ParcelUuid;
 import android.util.ArrayMap;
+import android.util.Log;
+
 import com.growthmoves.bluetoothmanager.BluetoothPlugin;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +53,11 @@ public class BluetoothLogic {
             System.out.println("Started advertising");
         }
 
-
+        @Override
+        public void onStartFailure(int errorCode) {
+            Log.e( "BLE", "Advertising onStartFailure: " + errorCode );
+            super.onStartFailure(errorCode);
+        }
     };
 
 
@@ -63,7 +71,8 @@ public class BluetoothLogic {
         DeviceContainer container = null;
 
         for (DeviceContainer c : btDevices.values()) {
-            ParcelUuid[] uuids = c.device.getUuids();
+            System.out.println("SEARCHINGDEVICE: " + c.device.getName() + " , UUIDS: " + c.uuids);
+            List<ParcelUuid> uuids = c.uuids;
             if (uuids != null) {
                 for (ParcelUuid uuid : uuids) {
                     if (uuid.getUuid() != null && uuid.getUuid().toString().equals(id)) {
@@ -84,9 +93,8 @@ public class BluetoothLogic {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 deviceName = container.device.getAlias();
             }
-            if (deviceName == null) return "{}";
         }
-        Sendable sendable = new Sendable(deviceName, container);
+        Sendable sendable = new Sendable(deviceName, container.uuids.get(0).toString(), container);
 
         Double value = round(signalStrength.CalculateAverageDistance(sendable.container), 3);
         connectionsString.append("{\"name\":\"").append(sendable.name).append("\", \"address\": \"").append(sendable.container.device.getAddress()).append("\", \"distance\": \"").append(value).append("\", \"accurate\": \"").append(sendable.container.accurate).append("\", \"updateRate\": \"").append(1/sendable.container.updateRate).append("\"}");
@@ -96,18 +104,22 @@ public class BluetoothLogic {
     static class DeviceContainer {
         public List<Double> distanceMeasurements = new ArrayList<>();
         public BluetoothDevice device;
+
         public int previousUpdates = 0;
         public float updateRate = 0;
         public boolean accurate = true;
+        public List<ParcelUuid> uuids;
     }
 
     static class Sendable {
         public String name;
         public DeviceContainer container;
+        public String uuid;
 
-        public Sendable(String deviceName, DeviceContainer containerObject) {
+        public Sendable(String deviceName, String uuidValue, DeviceContainer containerObject) {
             name = deviceName;
             container = containerObject;
+            uuid = uuidValue;
         }
     }
 
@@ -141,13 +153,14 @@ public class BluetoothLogic {
 
         for (Map.Entry<String, DeviceContainer> entry : btDevices.entrySet()) {
             String deviceName = entry.getValue().device.getName();
+            String uuid = entry.getValue().uuids.get(0).toString();
             if (deviceName == null) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     deviceName = entry.getValue().device.getAlias();
                 }
                 if (deviceName == null) continue;
             }
-            toSend.add(new Sendable(deviceName, entry.getValue()));
+            toSend.add(new Sendable(deviceName, uuid, entry.getValue()));
         }
 
         int count = 0;
@@ -155,7 +168,7 @@ public class BluetoothLogic {
             count++;
 
             Double value = round(signalStrength.CalculateAverageDistance(sendable.container), 3);
-            connectionsString.append("{\"name\":\"").append(sendable.name).append("\", \"address\": \"").append(sendable.container.device.getAddress()).append("\", \"distance\": \"").append(value).append("\", \"accurate\": \"").append(sendable.container.accurate).append("\", \"updateRate\": \"").append(1/sendable.container.updateRate).append("\"}");
+            connectionsString.append("{\"name\":\"").append(sendable.name).append("\", \"address\": \"").append(sendable.container.device.getAddress()).append("\", \"distance\": \"").append(value).append("\", \"accurate\": \"").append(sendable.container.accurate).append("\", \"updateRate\": \"").append(1/sendable.container.updateRate).append("\", \"uuid\": \"").append(sendable.uuid).append("\"}");
             if (count != toSend.size()) connectionsString.append(",");
 
         }
@@ -221,6 +234,8 @@ public class BluetoothLogic {
 
             BluetoothDevice device = result.getDevice();
             String deviceName = device.getName();
+            List<ParcelUuid> Uuids = result.getScanRecord().getServiceUuids();
+
             int rssi = result.getRssi();
             boolean accurate = true;
             Integer txPower = tryGetTxValue(result);
@@ -244,6 +259,8 @@ public class BluetoothLogic {
                 deviceContainer.distanceMeasurements.add(distance);
                 deviceContainer.accurate = accurate;
                 deviceContainer.updateRate++;
+
+                deviceContainer.uuids = Uuids;
 
                 if (deviceContainer.distanceMeasurements.size() > 10) {
                     deviceContainer.distanceMeasurements.subList(0, deviceContainer.distanceMeasurements.size() - 10).clear();
@@ -322,15 +339,16 @@ public class BluetoothLogic {
         advertiseBuilder.setIncludeTxPowerLevel(true);
         advertiseBuilder.setIncludeDeviceName(true);
 
-        advertiseBuilder.addServiceUuid(ParcelUuid.fromString(uniqueID));
+        ParcelUuid pUuid = new ParcelUuid(UUID.fromString(uniqueID));
+
+        advertiseBuilder.addServiceUuid(pUuid);
+        advertiseBuilder.addServiceData( pUuid, "Data".getBytes(StandardCharsets.UTF_8) );
 
         AdvertiseSettings.Builder advertiseSettingsBuilder = new AdvertiseSettings.Builder();
         advertiseSettingsBuilder.setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY);
         advertiseSettingsBuilder.setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH);
 
         advertiseSettingsBuilder.setConnectable(false);
-        advertiseSettingsBuilder.setConnectable(false);
-        advertiseSettingsBuilder.setTimeout(0);
 
         System.out.println("BluetoothLE advertising support: " +  manager.getAdapter().isMultipleAdvertisementSupported());
         manager.getAdapter().getBluetoothLeAdvertiser().startAdvertising(advertiseSettingsBuilder.build(), advertiseBuilder.build(), advertiseCallback);
